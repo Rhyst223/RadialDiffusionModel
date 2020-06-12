@@ -60,7 +60,7 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
     if lbc==None:
         lbc = [T[0]]*nt
     if rbc == None:
-        rbc = [T[-1]]nt
+        rbc = [T[-1]]*nt
         
     s = (0.5*dt/dL**2)    
     
@@ -71,67 +71,99 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
         Dplus = Dlist[n+1]
         
         
-        #Dl = np.array([L[i]**2 * 0.5*((D[i] + D[i-1])/2 + (Dplus[i] + Dplus[i-1])/2)/(L[i]-0.5*dL)**2 \
-         #              if i!=int(len(L)-1) else 2 * L[i]**2 * 0.5*((D[i] + D[i-1])/2 + (Dplus[i] + Dplus[i-1])/2)/(L[i]-0.5*dL)**2 \
-          #             for i in range(1,len(L))])
-        #Dr = np.array([L[i]**2 * 0.5*((D[i] + D[i+1])/2 + (Dplus[i] + Dplus[i+1])/2)/(L[i]+0.5*dL)**2 \
-         #              if i!=int(len(L)-1) else 0 for i in range(1,len(L))])
-            
-        
-        #A = diags([-s*Dl[1:], 1+s*Dc, -s*Dr], [-1, 0, 1], shape=(len(L)-1, len(L)-1)).toarray() 
-        #B1 = diags([s*Dl[1:], 1-s*Dc, s*Dr], [-1, 0, 1], shape=(len(L)-1, len(L)-1)).toarray() 
-        
         Dl = np.array([L[i]**2 * 0.5*((D[i] + D[i-1])/2 + (Dplus[i] + Dplus[i-1])/2)/(L[i]-0.5*dL)**2 \
-               for i in range(1,len(L)-1)])
+               for i in range(1,len(L))])
         Dr = np.array([L[i]**2 * 0.5*((D[i] + D[i+1])/2 + (Dplus[i] + Dplus[i+1])/2)/(L[i]+0.5*dL)**2 \
-               for i in range(1,len(L)-1)])
+               for i in range(len(L)-1)])
 
-        Dc = np.array([x+y for x,y in zip(Dl,Dr)])
-
-        A = diags([-s*Dl[1:], 1+s*Dc, -s*Dr], [-1, 0, 1], shape=(len(L)-2, len(L)-2)).toarray() 
-        B1 = diags([s*Dl, 1-s*Dc, s*Dr], [0, 1, 2], shape=(len(L)-2, len(L))).toarray()
+        Dc = np.array([x+y for x,y in zip(Dl[:-1],Dr[1:])])
+        
+        Qnew = (Q[n]+Q[n+1])/2
+        
+        if ltype=='d' and rtype=='d':
+        
+            A = diags([-s*Dl[1:], 1+s*Dc, -s*Dr[1:]], [-1, 0, 1], shape=(len(L)-2, len(L)-2)).toarray() 
+            B1 = diags([s*Dl, 1-s*Dc, s*Dr[1:]], [0, 1, 2], shape=(len(L)-2, len(L))).toarray()
         
            
-        #Input Dirichlet boundary for first row
-        b = np.zeros(len(L)-1)
-        if ltype=='d':
+            #Input Dirichlet boundary for first row
+            b = np.zeros(len(L)-2)
             b[0] = s*Dl[0] * lbc[n]
-            #b[0] = 2*s * 0.5*((D[1] + D[0])/2 + (Dplus[1] + Dplus[0])/2) \
-             #          / (L[1]-0.5*dL)**2 \
-              #         *L[1]**2 * lbc
-        elif ltype=='n':
-            b[0] = -2*dL*s*Dl[0]*lbc[n]/3
-            A[0][0] -= (4/3) * s*Dl[0]
-            A[0][1] += s*Dl[0]/3
-        
-        if rtype == 'd':     
-            b[-1] = s*Dr[-1] * rbc[n] 
-            #b[-1] = 2*s * 0.5*((D[-2] + D[-3])/2 + (Dplus[-2] + Dplus[-3])/2) \
-             #          / (L[-2]+0.5*dL)**2 \
-              #         *L[-2]**2 * rbc     
-        elif rtype == 'n':
-            b[-1] = 2*dL*s*Dr[-1]*rbc[n]/3
-            A[-1,-1]-= s*Dr[-1]*4/3
-            A[-1,-2]+= s*Dr[-1]/3
+            b[-1] = s*Dr[-1] * rbc[n]
+            B = np.add(np.dot(B1,T),b+ dt*(Qnew[1:-1]))
+            T[1:-1] = np.linalg.solve(A,B)
+            T[0] = lbc[n]
+            T[-1] = rbc[n]
             
-        Qnew = (Q[n]+Q[n+1])/2
-
-        B = np.add(np.dot(B1,T[1:-1]),b+ dt*(Qnew[1:-1]))
-        T[1:-1] = np.linalg.solve(A,B)
-        
-        if ltype == 'd':
-            #Change this to drop the ros and column and implement Dirichlet
-            T[0] = lbc
-        elif rtype=='n':
-            T[0] = -2*dL*lbc/3 + 4*T[1]/3 - T[2]/3
+            res.append(T.copy())
             
-        if rtype == 'd':
-            #Change this to drop the ros and column and implement Dirichlet
-            T[-1] = rbc
-        elif rtype=='n':
-            T[-1] = 2*dL*rbc/3 + 4*T[-1]/3 - T[-2]/3
-
-        res.append(T.copy())
+        elif ltype=='d' and rtype=='n':
+            A = np.zeros([len(L)-1,len(L)-1])
+            B1 = np.zeros([len(L)-1,len(L)])
+            
+            A[:-1,:] = diags([-s*Dl[1:], 1+s*Dc, -s*Dr[1:]], [-1, 0, 1], shape=(len(L)-2, len(L)-1)).toarray() 
+            B1[:-1,:] = diags([s*Dl, 1-s*Dc, s*Dr[1:]], [0, 1, 2], shape=(len(L)-2, len(L))).toarray()
+            
+            A[-1,-1] = 1 + (2 * s * Dl[-1])
+            A[-1,-2] = -2 * s * Dl[-1]
+            B1[-1,-1] = 1 - (2 * s * Dl[-1])
+            B1[-1,-2] = 2 * s * Dl[-1]
+            
+            b = np.zeros(len(L)-1)
+            b[0] = s*Dl[0] * lbc[n]
+            b[-1] = 4* s * Dl[-1] * rbc[n] * dL
+            B = np.add(np.dot(B1,T),b+ dt*(Qnew[1:]))
+            T[1:] = np.linalg.solve(A,B)
+            T[0] = lbc[n]
+            
+            res.append(T.copy())
+            
+        elif ltype=='n' and rtype=='d':
+            A = np.zeros([len(L)-1,len(L)-1])
+            B1 = np.zeros([len(L)-1,len(L)])
+            
+            A[1:,:] = diags([-s*Dl, 1+s*Dc, -s*Dr[1:]], [0, 1, 2], shape=(len(L)-2, len(L)-1)).toarray() 
+            B1[1:,:] = diags([s*Dl, 1-s*Dc, s*Dr[1:]], [0, 1, 2], shape=(len(L)-2, len(L))).toarray()
+            
+            A[0,0] = 1 + (2 * s * Dr[0])
+            A[0,1] = -2 * s * Dr[0]
+            B1[0,0] = 1 - (2 * s * Dr[0])
+            B1[0,1] = 2 * s * Dr[0]
+            
+            b = np.zeros(len(L)-1)
+            b[-1] = s*Dr[0] * rbc[n]
+            b[0] = -4* s * Dr[0] * lbc[n] * dL
+            B = np.add(np.dot(B1,T),b+ dt*(Qnew[:-1]))
+            T[:-1] = np.linalg.solve(A,B)
+            T[-1] = rbc[n]
+            
+            res.append(T.copy())
+            
+        elif ltype=='n' and rtype=='n':
+            A = np.zeros([len(L),len(L)])
+            B1 = np.zeros([len(L),len(L)])
+            
+            A[1:-1,:] = diags([-s*Dl, 1+s*Dc, -s*Dr[1:]], [0, 1, 2], shape=(len(L)-2, len(L))).toarray() 
+            B1[1:-1,:] = diags([s*Dl, 1-s*Dc, s*Dr[1:]], [0, 1, 2], shape=(len(L)-2, len(L))).toarray()
+            
+            A[0,0] = 1 + (2 * s * Dr[0])
+            A[0,1] = -2 * s * Dr[0]
+            B1[0,0] = 1 - (2 * s * Dr[0])
+            B1[0,1] = 2 * s * Dr[0]
+            
+            A[-1,-1] = 1 + (2 * s * Dl[-1])
+            A[-1,-2] = -2 * s * Dl[-1]
+            B1[-1,-1] = 1 - (2 * s * Dl[-1])
+            B1[-1,-2] = 2 * s * Dl[-1]
+            
+            b = np.zeros(len(L))
+            b[-1] = 4* s * Dl[-1] * rbc[n] * dL
+            b[0] = -4* s * Dr[0] * lbc[n] * dL
+            B = np.add(np.dot(B1,T),b+ dt*(Qnew))
+            T = np.linalg.solve(A,B)
+            
+            res.append(T.copy())
+            
 
     return T,dt, res, L, dL
 
