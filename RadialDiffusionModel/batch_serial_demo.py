@@ -45,7 +45,7 @@ if __name__ == '__main__':
    
    
     #Run diffusion model
-    final_psd, psd_array = Crank_Nicolson(dt,nt,dl,L,f,D,Q,lbc=lbc,rbc=rbc,ltype=options.ltype,rtype=options.rtype,int(options.f_return)))
+    final_psd, psd_array = Crank_Nicolson(dt,nt,dl,L,f,D,Q,lbc=lbc,rbc=rbc,ltype=options.ltype,rtype=options.rtype,f_return=int(options.f_return))
     
     #Animate the resuls
     fig, ax = plt.subplots(figsize=(10,10))
