@@ -48,14 +48,15 @@ if __name__ == '__main__':
     final_psd, psd_array = Crank_Nicolson(dt,nt,dl,L,f,D,Q,lbc=lbc,rbc=rbc,ltype=options.ltype,rtype=options.rtype,f_return=int(options.f_return))
     
     #Animate the resuls
-    fig, ax = plt.subplots(figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(5,5))
     ax.set(xlim=(min(L), max(L)), ylim=(0, max(f)))
 
     line = ax.plot(L, psd_array[0], color='k', lw=2)[0]
 
     def animate(i):
-        line.set_ydata(psd_array[1:][i, :])
+        line.set_ydata(psd_array[1:][i])
         ax.set_title('t = ' + str((i+1)*int(options.f_return)) + ' seconds')
         
     anim = FuncAnimation(fig, animate, interval=100, frames=len(psd_array)-1, repeat=True)
-    fig.show()
+    plt.draw()
+    plt.show()
