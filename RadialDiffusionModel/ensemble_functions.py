@@ -39,7 +39,7 @@ def Diff_Coeff(L,Kp, full=False):
     else:
         return D
     
-def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
+def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d',f_return=1):
     '''
     Code for running the Modified Crank Nicolson numerical scheme for radial diffusion as in (Welling et al, 2012).
     Currently functionality requires Diffusion array to extend for one timestep beyond the final time
@@ -66,9 +66,11 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
         - rbc: Right boundary condition (list of nt values for each time step)
         - ltype: Type of left boundary condition. Default Dirichlet ('d') can also handle Neumann ('n')
         - rtype: Type of right boundary condition. Default Dirichlet ('d') can also handle Neumann ('n')
+        - f_return: Which PSDs to include in seconds in result variable res
         
        Outputs:
         - Final PSD T
+        - Array of PSD results at timesteps f_return
         
     
     '''
@@ -112,7 +114,6 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
             T[0] = lbc[n]
             T[-1] = rbc[n]
             
-            res.append(T.copy())
             
         elif ltype=='d' and rtype=='n':
             A = np.zeros([len(L)-1,len(L)-1])
@@ -132,8 +133,7 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
             B = np.add(np.dot(B1,T),b+ dt*(Qnew[1:]))
             T[1:] = np.linalg.solve(A,B)
             T[0] = lbc[n]
-            
-            res.append(T.copy())
+           
             
         elif ltype=='n' and rtype=='d':
             A = np.zeros([len(L)-1,len(L)-1])
@@ -153,8 +153,7 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
             B = np.add(np.dot(B1,T),b+ dt*(Qnew[:-1]))
             T[:-1] = np.linalg.solve(A,B)
             T[-1] = rbc[n]
-            
-            res.append(T.copy())
+           
             
         elif ltype=='n' and rtype=='n':
             A = np.zeros([len(L),len(L)])
@@ -178,11 +177,12 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
             b[0] = -4* s * Dr[0] * lbc[n] * dL
             B = np.add(np.dot(B1,T),b+ dt*(Qnew))
             T = np.linalg.solve(A,B)
-            
+        
+        if n % f_return == 0:
             res.append(T.copy())
             
 
-    return T,dt, res, L, dL
+    return T,res
 
 
 def PSD(L, A=9*10**4, B=0.05, mu=4, sig=0.38, gamma=5):
