@@ -54,6 +54,23 @@ def Crank_Nicolson(dt,nt,dL,L,f,Dlist,Q,lbc=None,rbc=None,ltype='d',rtype='d'):
     Boundary conditions allowed on left/right are Dirichlet ('d') and Neumann ('n'). Custom BC values for each timestep
     are allowed. Neumann BCs are calculated at order (dL)^2 (might put in functionality for lower order)
     
+    Inputs:
+        - dt: timestep (seconds)
+        - nt: number of time steps
+        - dL: space step
+        - L: Grid in space
+        - f: Initial conditions
+        - D: Diffusion coefficient for each time step (list of nt diffusion coefficients)
+        - Q: Source term to be applied in each timestep (list of nt source terms)
+        - lbc: Left boundary condition (list of nt values for each time step)
+        - rbc: Right boundary condition (list of nt values for each time step)
+        - ltype: Type of left boundary condition. Default Dirichlet ('d') can also handle Neumann ('n')
+        - rtype: Type of right boundary condition. Default Dirichlet ('d') can also handle Neumann ('n')
+        
+       Outputs:
+        - Final PSD T
+        
+    
     '''
     T = f.copy()
     
