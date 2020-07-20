@@ -49,7 +49,7 @@ if __name__ == '__main__':
     
     #Animate the resuls
     fig, ax = plt.subplots(figsize=(10,10))
-    ax.set(xlim=(min(L), max(L)), ylim=(0, max(f))
+    ax.set(xlim=(min(L), max(L)), ylim=(0, max(f)))
 
     line = ax.plot(L, psd_array[0], color='k', lw=2)[0]
 
