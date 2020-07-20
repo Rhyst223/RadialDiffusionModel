@@ -8,6 +8,7 @@ import itertools
 import scipy.stats as ss
 import argparse
 
+dl, dt = 0.1, 1
 L = np.arange(2.5,6+dl,dl)
 f = PSD(L)    
 nt = int(172800/dt)
