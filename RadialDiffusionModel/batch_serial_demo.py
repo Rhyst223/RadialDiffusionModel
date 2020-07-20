@@ -14,7 +14,7 @@ if __name__ == '__main__':
     parser.add_argument('L_max', help='Highest L* value in discretisation')
     parser.add_argument('nt', help='Number of timesteps in seconds')
     parser.add_argument('kp', help='Kp in Ozeke diffusion coefficient')
-    parser.add_argument('--f_return', default=1 help='When to return each PSD in result array')
+    parser.add_argument('--f_return', default=1, help='When to return each PSD in result array')
     parser.add_argument('--lbc', default=None, help='Value of left boundary condition')
     parser.add_argument('--rbc', default=None, help='Value of right boundary condition')
     parser.add_argument('--ltype', default='d', help='Type of left boundary condition. Neumann (n) or Dirichlet (d))
