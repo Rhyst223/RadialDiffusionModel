@@ -24,6 +24,9 @@ if __name__ == '__main__':
     
     dl, dt = float(options.dL), float(options.dt)
     L = np.arange(float(options.L_min),float(options.L_max),dl)
+    
+    #If running this code interactively you may not want to use the PSD function as your PSD,
+    #and can just use something custom. Just remember if has to have the same number of points as L!
     f = PSD(L)    
     
     nt = int(options.nt)
@@ -42,6 +45,10 @@ if __name__ == '__main__':
         rbc = None
     else:
         rbc = [float(options.rbc)]*nt
+        
+    #NOTE: If you want a custom boundary this is not available to do from the command line at the moment.
+    #BUT if you are just running the script interactively you can do something like
+    #lbc = list(np.sin(whatever the conditions)),   etc
    
    
     #Run diffusion model
